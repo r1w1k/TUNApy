@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmlrequest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns="http://www.netaccess.transunion.com/namespace">
+	<!-- These two are configured directly on the TUNA account -->
+	<systemId></systemId>
+	<systemPassword></systemPassword>
+	<productrequest>
+		<creditBureau xmlns="http://www.transunion.com/namespace">
+			<document>request</document>
+			<version>2.0</version>
+			<transactionControl>
+				<!-- This is arbitrary - TU will just echo it back in the response, in case we had to keep track of multiple users on our account -->
+				<userRefNumber></userRefNumber>
+				<subscriber>
+					<!-- These are all assigned by TU-->					
+ 					<industryCode></industryCode>
+					<memberCode></memberCode>
+					<inquirySubscriberPrefixCode></inquirySubscriberPrefixCode>
+					<password></password>
+				</subscriber>
+				<options>
+					<processingEnvironment></processingEnvironment>
+					<country>us</country>
+					<language>en</language>
+					<contractualRelationship>individual</contractualRelationship>
+					<pointOfSaleIndicator>none</pointOfSaleIndicator>
+				</options>
+				<clientVendorSoftware>
+					<vendor>
+						<id></id>
+						<name></name>
+					</vendor>
+					<software>
+						<name></name>
+						<version></version>
+					</software>
+				</clientVendorSoftware>
+			</transactionControl>
+			<product>
+				<!-- Credit Report product code -->
+				<code>07000</code>
+				<subject>
+					<number>1</number>
+					<subjectRecord>
+						<indicative>
+							<name>
+								<person>
+									<first></first>
+									<middle></middle>
+									<last></last>
+								</person>
+							</name>
+							<address>
+								<status>current</status>
+								<street>
+									<unparsed></unparsed>
+								</street>
+								<location>
+									<city></city>
+									<state></state>
+									<zipCode></zipCode>
+								</location>
+							</address>
+							<socialSecurity>
+								<number></number>
+							</socialSecurity>
+						</indicative>
+						<custom></custom>
+					</subjectRecord>
+				</subject>
+				<permissiblePurpose>
+					<code></code>
+					<endUser>
+						<unparsed></unparsed>
+					</endUser>
+					<inquiryECOADesignator>individual</inquiryECOADesignator>
+				</permissiblePurpose>
+				<responseInstructions>
+					<returnErrorText>true</returnErrorText>
+					<document/>
+				</responseInstructions>
+			</product>
+		</creditBureau>
+	</productrequest>
+</xmlrequest>
