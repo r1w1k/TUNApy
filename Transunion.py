@@ -44,10 +44,16 @@ class TransunionApi:
 		
 		transactionControl = creditBureau.find(f'{ns1}transactionControl')
 		product = creditBureau.find(f'{ns1}product')
+		permissiblePurpose = product.find(f'{ns1}permissiblePurpose')
+		subject = product.find(f'{ns1}subject').find(f'{ns1}subjectRecord').find(f'{ns1}indicative')
+		subjectName = subject.find(f'{ns1}name').find(f'{ns1}person')
+		subjectAddress = subject.find(f'{ns1}address')
+		subjectLocation = subjectAddress.find(f'{ns1}location')
 
 		subscriber = transactionControl.find(f'{ns1}subscriber')
 		options = transactionControl.find(f'{ns1}options')
 		clientVendorSoftware = transactionControl.find(f'{ns1}clientVendorSoftware')
+		vendor = clientVendorSoftware.find(f'{ns1}vendor')
 
 		subscriber.find(f'{ns1}industryCode').text = self.config.industry_code
 		subscriber.find(f'{ns1}memberCode').text = self.config.member_code
@@ -56,7 +62,6 @@ class TransunionApi:
 
 		options.find(f'{ns1}processingEnvironment').text = self.config.environment
 
-		vendor = clientVendorSoftware.find(f'{ns1}vendor')
 		vendor.find(f'{ns1}id').text = self.config.vendor_id
 		vendor.find(f'{ns1}name').text = self.config.vendor_name
 
@@ -64,21 +69,15 @@ class TransunionApi:
 		software.find(f'{ns1}name').text = self.config.software_name
 		software.find(f'{ns1}version').text = self.config.software_version
 
-		permissiblePurpose = product.find(f'{ns1}permissiblePurpose')
 		permissiblePurpose.find(f'{ns1}code').text = self.config.permissible_purpose
 		permissiblePurpose.find(f'{ns1}endUser').find(f'{ns1}unparsed').text = self.config.end_user
 
 		#Subject of the report
-		subject = product.find(f'{ns1}subject').find(f'{ns1}subjectRecord').find(f'{ns1}indicative')
-		
-		subjectName = subject.find(f'{ns1}name').find(f'{ns1}person')
 		subjectName.find(f'{ns1}first').text = self.args['first']
 		subjectName.find(f'{ns1}middle').text = self.args['middle']
 		subjectName.find(f'{ns1}last').text = self.args['last']
 
-		subjectAddress = subject.find(f'{ns1}address')
 		subjectAddress.find(f'{ns1}street').find(f'{ns1}unparsed').text = self.args['address']
-		subjectLocation = subjectAddress.find(f'{ns1}location')
 		subjectLocation.find(f'{ns1}city').text= self.args['city']
 		subjectLocation.find(f'{ns1}state').text = self.args['state']
 		subjectLocation.find(f'{ns1}zipCode').text = self.args['zip']
