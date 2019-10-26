@@ -1,32 +1,10 @@
 from lxml import etree as ET
 import requests
-import config
-
-class Configuration:
-	def __init__(self, environment='test'):
-		prod = environment is 'production'
-		self.environment = 'production' if prod else 'standardTest'
-		self.curl = 'https://netaccess-test.transunion.com/' if prod else 'https://netaccess-test.transunion.com/'
-		self.password = config.prod_password if prod else config.test_password
-		self.market = config.prod_market if prod else config.test_market
-		self.submarket = config.prod_submarket if prod else config.test_submarket
-		self.industry_code = config.prod_industry_code if prod else config.test_industry_code
-		self.member_code = config.prod_member_code if prod else config.test_member_code
-		self.system_id = config.prod_system_id  if prod else config.test_system_id
-		self.system_pw = config.prod_system_pw if prod else config.test_system_pw
-		self.vendor_id = config.prod_vendor_id if prod else config.test_vendor_id
-		self.vendor_name = config.prod_vendor_name if prod else config.test_vendor_name
-		self.software_name = config.prod_software_name if prod else config.test_software_name
-		self.software_version = config.prod_software_version if prod else config.test_software_version
-		self.permissible_purpose = config.prod_permissible_purpose if prod else config.test_permissible_purpose
-		self.end_user = config.prod_end_user if prod else config.test_end_user
-		self.certificate_path = config.certificate_path
-		self.key_path = config.key_path
+import os
 
 class TransunionApi:
 	def __init__(self,args):
 		self.args = args
-		self.config = Configuration(args["environment"])
 
 	def get_request_xml(self):
 		ns0 = '{http://www.netaccess.transunion.com/namespace}'
@@ -37,8 +15,8 @@ class TransunionApi:
 		root = tree.getroot()
 
 		#Account config
-		root.find(f'{ns0}systemId').text = self.config.system_id
-		root.find(f'{ns0}systemPassword').text = self.config.system_pw
+		root.find(f'{ns0}systemId').text = os.getenv("SYSTEM_ID")
+		root.find(f'{ns0}systemPassword').text = os.getenv("SYSTEM_PW")
 
 		creditBureau = root.find(f'{ns0}productrequest').find(f'{ns1}creditBureau')
 		
@@ -55,22 +33,22 @@ class TransunionApi:
 		clientVendorSoftware = transactionControl.find(f'{ns1}clientVendorSoftware')
 		vendor = clientVendorSoftware.find(f'{ns1}vendor')
 
-		subscriber.find(f'{ns1}industryCode').text = self.config.industry_code
-		subscriber.find(f'{ns1}memberCode').text = self.config.member_code
-		subscriber.find(f'{ns1}inquirySubscriberPrefixCode').text = self.config.market + self.config.submarket
-		subscriber.find(f'{ns1}password').text = self.config.password
+		subscriber.find(f'{ns1}industryCode').text = os.getenv("INDUSTRY_CODE")
+		subscriber.find(f'{ns1}memberCode').text = os.getenv("MEMBER_CODE")
+		subscriber.find(f'{ns1}inquirySubscriberPrefixCode').text = os.getenv("MARKET") + os.getenv("SUBMARKET")
+		subscriber.find(f'{ns1}password').text = os.getenv("PASSWORD")
 
-		options.find(f'{ns1}processingEnvironment').text = self.config.environment
+		options.find(f'{ns1}processingEnvironment').text = os.getenv("ENVIRONMENT")
 
-		vendor.find(f'{ns1}id').text = self.config.vendor_id
-		vendor.find(f'{ns1}name').text = self.config.vendor_name
+		vendor.find(f'{ns1}id').text = os.getenv("VENDOR_ID")
+		vendor.find(f'{ns1}name').text = os.getenv("VENDOR_NAME")
 
 		software = clientVendorSoftware.find(f'{ns1}software')
-		software.find(f'{ns1}name').text = self.config.software_name
-		software.find(f'{ns1}version').text = self.config.software_version
+		software.find(f'{ns1}name').text = os.getenv("SOFTWARE_NAME")
+		software.find(f'{ns1}version').text = os.getenv("SOFTWARE_VERSION")
 
-		permissiblePurpose.find(f'{ns1}code').text = self.config.permissible_purpose
-		permissiblePurpose.find(f'{ns1}endUser').find(f'{ns1}unparsed').text = self.config.end_user
+		permissiblePurpose.find(f'{ns1}code').text = os.getenv("PERMISSIBLE_PURPOSE")
+		permissiblePurpose.find(f'{ns1}endUser').find(f'{ns1}unparsed').text = os.getenv("END_USER")
 
 		#Subject of the report
 		subjectName.find(f'{ns1}first').text = self.args['first']
@@ -91,7 +69,7 @@ class TransunionApi:
 	def make_request(self):
 		print('sending:')
 		print(self.request_xml)
-		curl = self.config.curl
-		certs = (self.config.certificate_path, self.config.key_path)
+		curl = os.getenv("CURL")
+		certs = (os.getenv("CERTIFICATE_PATH"), os.getenv("KEY_PATH"))
 		r = requests.post(curl, headers = {'Content-Type': 'application/xml'}, data=self.request_xml, cert = certs, verify=False)
 		return r.content

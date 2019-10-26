@@ -1,4 +1,4 @@
-*config.py
+.env
 *.crt
 *.key
 __pycache__

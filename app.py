@@ -1,6 +1,10 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import html
 from Transunion import TransunionApi
 from flask import Flask, jsonify, request, Response
+
 app = Flask(__name__)
 
 @app.route('/transunion', methods=['POST'])
