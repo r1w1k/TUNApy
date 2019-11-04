@@ -8,6 +8,8 @@ from Transunion import TransunionApi
 from docusign import DocusignApi
 from mailmerge import MailMerge
 from flask import Flask, jsonify, request, Response
+from datetime import datetime, timezone
+
 
 app = Flask(__name__)
 
@@ -45,7 +47,18 @@ def create_doc(request_json):
         return filename
     return "file not found"
 
+# 	Hubspot requires the Unix timestamp in milliseconds for any updates to date/datetime fields,
+# 	and Bubble has trouble with that sort of customization
+@app.route('/util/hubspot_timestamp', methods=['GET'])
+def get_hubspot_timestamp():
+	params = request.args
+	year = int(params["year"])
+	month = int(params["month"])
+	day = int(params["day"])	
+	timestamp = int(datetime(year, month, day, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
+	return {
+		"timestamp": timestamp
+	}
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-
