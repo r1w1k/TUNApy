@@ -69,7 +69,7 @@ class TransunionApi:
 	def make_request(self):
 		print('sending:')
 		print(self.request_xml)
-		curl = os.getenv("CURL")
+		uri = os.getenv("TURI")
 		certs = (os.getenv("CERTIFICATE_PATH"), os.getenv("KEY_PATH"))
-		r = requests.post(curl, headers = {'Content-Type': 'application/xml'}, data=self.request_xml, cert = certs, verify=False)
+		r = requests.post(uri, headers = {'Content-Type': 'application/xml'}, data=self.request_xml, cert = certs, verify=False)
 		return r.content
