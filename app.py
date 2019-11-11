@@ -9,6 +9,7 @@ from docusign import DocusignApi
 from mailmerge import MailMerge
 from flask import Flask, jsonify, request, Response
 from datetime import datetime, timezone
+from cryptography.fernet import Fernet
 
 
 app = Flask(__name__)
@@ -59,6 +60,24 @@ def get_hubspot_timestamp():
 	return {
 		"timestamp": timestamp
 	}
+
+@app.route('/util/aes/en', methods=['GET'])
+def get_encrypted():
+    message = request.args["message"].encode()
+    f = Fernet(os.getenv("FERNET_KEY").encode())
+    encrypted = f.encrypt(message)
+    return {
+        "encrypted": encrypted.decode()
+    }
+
+@app.route('/util/aes/de', methods=['GET'])
+def get_decrypted():
+    message = request.args["message"].encode()
+    f = Fernet(os.getenv("FERNET_KEY").encode())
+    decrypted = f.decrypt(message)
+    return {
+        "decrypted": decrypted.decode()
+    }
 
 if __name__ == '__main__':
     app.run(debug=True)
