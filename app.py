@@ -11,7 +11,6 @@ from flask import Flask, jsonify, request, Response
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 
-
 app = Flask(__name__)
 
 @app.route('/transunion', methods=['POST'])
@@ -52,14 +51,19 @@ def create_doc(request_json):
 # 	and Bubble has trouble with that sort of customization
 @app.route('/util/hubspot_timestamp', methods=['GET'])
 def get_hubspot_timestamp():
-	params = request.args
-	year = int(params["year"])
-	month = int(params["month"])
-	day = int(params["day"])	
-	timestamp = int(datetime(year, month, day, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
-	return {
-		"timestamp": timestamp
-	}
+    params = request.args
+    year = int(params["year"])
+    month = int(params["month"])
+    day = int(params["day"])
+    try:
+        timestamp = int(datetime(year, month, day, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
+        return {
+            "timestamp": timestamp
+        }
+    except E:
+        return {
+            "timestamp": 0
+        }
 
 @app.route('/util/aes/en', methods=['GET'])
 def get_encrypted():
