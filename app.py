@@ -4,16 +4,22 @@ load_dotenv()
 import html
 import os
 import time
+import boto3
+import io
 from Transunion import TransunionApi
 from docusign import DocusignApi
 from mailmerge import MailMerge
-from flask import Flask, jsonify, request, Response
+
+from flask import Flask, jsonify, request, Response, send_file
+from flask_httpauth import HTTPBasicAuth
+
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 
 app = Flask(__name__)
+auth = HTTPBasicAuth()
 
-@app.route('/transunion', methods=['POST'])
+@app.route("/transunion", methods=["POST"])
 def transunion_request():
 	args = request.json
 	for key in args:
@@ -22,9 +28,9 @@ def transunion_request():
 	t.get_request_xml()
 	return t.make_request()
 
-@app.route('/mailmerge/create_envelope', methods=['POST', 'GET'])
+@app.route("/mailmerge/create_envelope", methods=["POST", "GET"])
 def docusign_request():
-    if request.method == 'POST':
+    if request.method == "POST":
         filename = create_doc(request.json)
         docusign_params = {
             "name": request.json["docusign_name"],
@@ -49,7 +55,7 @@ def create_doc(request_json):
 
 # 	Hubspot requires the Unix timestamp in milliseconds for any updates to date/datetime fields,
 # 	and Bubble has trouble with that sort of customization
-@app.route('/util/hubspot_timestamp', methods=['GET'])
+@app.route("/util/hubspot_timestamp", methods=["GET"])
 def get_hubspot_timestamp():
     params = request.args
     year = int(params["year"])
@@ -65,23 +71,68 @@ def get_hubspot_timestamp():
             "timestamp": 0
         }
 
-@app.route('/util/aes/en', methods=['GET'])
+@app.route("/util/aes/en", methods=["GET"])
 def get_encrypted():
     message = request.args["message"].encode()
-    f = Fernet(os.getenv("FERNET_KEY").encode())
-    encrypted = f.encrypt(message)
+    fernet = Fernet(os.getenv("S3_KEY").encode())
+    encrypted = fernet.encrypt(message)
     return {
         "encrypted": encrypted.decode()
     }
 
-@app.route('/util/aes/de', methods=['GET'])
+@app.route("/util/aes/de", methods=["GET"])
+@auth.login_required
 def get_decrypted():
     message = request.args["message"].encode()
-    f = Fernet(os.getenv("FERNET_KEY").encode())
-    decrypted = f.decrypt(message)
+    fernet = Fernet(os.getenv("S3_KEY").encode())
+    decrypted = fernet.decrypt(message)
     return {
         "decrypted": decrypted.decode()
     }
 
-if __name__ == '__main__':
+@app.route("/util/s3/upload", methods=["POST", "OPTIONS"])
+def upload_file():
+    if request.method == "POST":
+        uploaded_bytes = request.files["file"].read()
+        s3_file_path = "dropzone/" + request.files["file"].filename
+
+        s3 = boto3.client("s3")
+        s3_response = s3.put_object(
+                        Bucket = os.getenv("S3_BUCKET"),
+                        Key=s3_file_path, 
+                        Body=uploaded_bytes,
+                        SSECustomerKey=bytes(os.getenv("S3_KEY").encode()),
+                        SSECustomerAlgorithm="AES256")
+        return { "message": "file successfully encrypted + uploaded" }
+
+    if request.method == "OPTIONS":
+        return "returning requested CORS headers"
+
+@app.route("/util/s3/download/<directory>/<filename>", methods=["GET", "OPTIONS"])
+@auth.login_required
+def get_file(directory, filename):
+    s3 = boto3.client("s3")
+    s3_response = s3.get_object(
+                    Bucket = os.getenv("S3_BUCKET"),
+                    Key = directory + "/" + filename,
+                    SSECustomerKey = bytes(os.getenv("S3_KEY").encode()),
+                    SSECustomerAlgorithm = "AES256")
+    returned_file = s3_response["Body"].read()
+
+    return send_file(
+        io.BytesIO(returned_file),
+        attachment_filename = filename)
+
+@auth.verify_password
+def verify_password(username, password):
+    return username == os.getenv("AUTH_USERNAME") and password  == os.getenv("AUTH_PASSWORD")
+
+@app.after_request
+def add_security_headers(res):
+    res.headers["Access-Control-Allow-Origin"] = "*"
+    res.headers["Access-Control-Allow-Headers"] = "cache-control,x-requested-with"
+    res.headers["Access-Control-Request-Method"] = "POST"
+    return res
+
+if __name__ == "__main__":
     app.run(debug=True)
