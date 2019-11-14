@@ -3,15 +3,16 @@ load_dotenv()
 
 import html
 import os
+from io import BytesIO
 import time
 import boto3
-import io
 from Transunion import TransunionApi
 from docusign import DocusignApi
 from mailmerge import MailMerge
 
 from flask import Flask, jsonify, request, Response, send_file
 from flask_httpauth import HTTPBasicAuth
+from werkzeug.wsgi import FileWrapper
 
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
@@ -21,12 +22,12 @@ auth = HTTPBasicAuth()
 
 @app.route("/transunion", methods=["POST"])
 def transunion_request():
-	args = request.json
-	for key in args:
-		args[key] = html.escape(args[key].upper())
-	t = TransunionApi(args)
-	t.get_request_xml()
-	return t.make_request()
+    args = request.json
+    for key in args:
+        args[key] = html.escape(args[key].upper())
+    t = TransunionApi(args)
+    t.get_request_xml()
+    return t.make_request()
 
 @app.route("/mailmerge/create_envelope", methods=["POST", "GET"])
 def docusign_request():
@@ -43,7 +44,7 @@ def docusign_request():
         os.remove(filename)
         return envelope.callout().json()
     else:
-        return Response(status=403) 
+        return Response(status=403)
 
 def create_doc(request_json):
     with MailMerge("./mailmerge_templates/" + request_json["mailmerge_template"]) as document:
@@ -53,8 +54,8 @@ def create_doc(request_json):
         return filename
     return "file not found"
 
-# 	Hubspot requires the Unix timestamp in milliseconds for any updates to date/datetime fields,
-# 	and Bubble has trouble with that sort of customization
+#   Hubspot requires the Unix timestamp in milliseconds for any updates to date/datetime fields,
+#   and Bubble has trouble with that sort of customization
 @app.route("/util/hubspot_timestamp", methods=["GET"])
 def get_hubspot_timestamp():
     params = request.args
@@ -74,7 +75,7 @@ def get_hubspot_timestamp():
 @app.route("/util/aes/en", methods=["GET"])
 def get_encrypted():
     message = request.args["message"].encode()
-    fernet = Fernet(os.getenv("S3_KEY").encode())
+    fernet = Fernet(os.getenv("FERNET_KEY").encode())
     encrypted = fernet.encrypt(message)
     return {
         "encrypted": encrypted.decode()
@@ -84,7 +85,7 @@ def get_encrypted():
 @auth.login_required
 def get_decrypted():
     message = request.args["message"].encode()
-    fernet = Fernet(os.getenv("S3_KEY").encode())
+    fernet = Fernet(os.getenv("FERNET_KEY").encode())
     decrypted = fernet.decrypt(message)
     return {
         "decrypted": decrypted.decode()
@@ -99,7 +100,7 @@ def upload_file():
         s3 = boto3.client("s3")
         s3_response = s3.put_object(
                         Bucket = os.getenv("S3_BUCKET"),
-                        Key=s3_file_path, 
+                        Key=s3_file_path,
                         Body=uploaded_bytes,
                         SSECustomerKey=bytes(os.getenv("S3_KEY").encode()),
                         SSECustomerAlgorithm="AES256")
@@ -117,15 +118,22 @@ def get_file(directory, filename):
                     Key = directory + "/" + filename,
                     SSECustomerKey = bytes(os.getenv("S3_KEY").encode()),
                     SSECustomerAlgorithm = "AES256")
-    returned_file = s3_response["Body"].read()
-
-    return send_file(
-        io.BytesIO(returned_file),
-        attachment_filename = filename)
+    returned_file = BytesIO(s3_response["Body"].read())
+    wrapped_file = FileWrapper(returned_file)
+    headers = {
+        'Content-Disposition': 'attachment; filename="{}"'.format(filename)
+    }
+    return Response(wrapped_file, direct_passthrough=True, headers=headers)
 
 @auth.verify_password
 def verify_password(username, password):
     return username == os.getenv("AUTH_USERNAME") and password  == os.getenv("AUTH_PASSWORD")
+
+@auth.error_handler
+def unauthorized():
+    response = jsonify({'status': 401, 'error': 'unauthorized', 'message': 'Please authenticate to access this API.'})
+    response.status_code = 401
+    return response
 
 @app.after_request
 def add_security_headers(res):
@@ -133,6 +141,7 @@ def add_security_headers(res):
     res.headers["Access-Control-Allow-Headers"] = "cache-control,x-requested-with"
     res.headers["Access-Control-Request-Method"] = "POST"
     return res
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -62,10 +62,10 @@ class test_util(unittest.TestCase):
 			encrypted = main.get_encrypted()["encrypted"]
 			self.assertTrue(encrypted and encrypted != original_message)
 
-		decrypted = ""
-		with main.app.test_request_context(path="/util/aes/de?message=" + encrypted, method="GET"):
-			decrypted = main.get_decrypted()["decrypted"]
-			self.assertTrue(decrypted and decrypted == original_message)
+		with main.app.test_request_context(path="/util/aes/de?message=" + encrypted,method="GET"):
+			decrypted = main.get_decrypted()
+			self.assertTrue(decrypted.status_code == 401)
+
 
 	def test_unix_timestamp(self):
 		month = "11"
