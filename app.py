@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import mimetypes
+mimetypes.init()
+
 import html
 import os
 from io import BytesIO
@@ -10,7 +13,7 @@ from Transunion import TransunionApi
 from docusign import DocusignApi
 from mailmerge import MailMerge
 
-from flask import Flask, jsonify, request, Response, send_file
+from flask import Flask, jsonify, request, Response, send_file, render_template
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.wsgi import FileWrapper
 
@@ -91,11 +94,11 @@ def get_decrypted():
         "decrypted": decrypted.decode()
     }
 
-@app.route("/util/s3/upload", methods=["POST", "OPTIONS"])
-def upload_file():
+@app.route("/util/s3/upload/<directory>", methods=["POST", "OPTIONS"])
+def upload_file(directory):
     if request.method == "POST":
         uploaded_bytes = request.files["file"].read()
-        s3_file_path = "dropzone/" + request.files["file"].filename
+        s3_file_path = "dropzone/" + directory + "/" + request.files["file"].filename
 
         s3 = boto3.client("s3")
         s3_response = s3.put_object(
@@ -107,23 +110,39 @@ def upload_file():
         return { "message": "file successfully encrypted + uploaded" }
 
     if request.method == "OPTIONS":
-        return "returning requested CORS headers"
+        return { "message": "returning requested CORS headers" }
 
-@app.route("/util/s3/download/<directory>/<filename>", methods=["GET", "OPTIONS"])
+@app.route("/util/s3/download/<user>/<filename>", methods=["GET", "OPTIONS"])
 @auth.login_required
-def get_file(directory, filename):
+def get_file(user, filename):
     s3 = boto3.client("s3")
     s3_response = s3.get_object(
                     Bucket = os.getenv("S3_BUCKET"),
-                    Key = directory + "/" + filename,
+                    Key = "dropzone/" + user + "/" + filename,
                     SSECustomerKey = bytes(os.getenv("S3_KEY").encode()),
                     SSECustomerAlgorithm = "AES256")
     returned_file = BytesIO(s3_response["Body"].read())
-    wrapped_file = FileWrapper(returned_file)
-    headers = {
-        'Content-Disposition': 'attachment; filename="{}"'.format(filename)
-    }
-    return Response(wrapped_file, direct_passthrough=True, headers=headers)
+
+    filename, file_extension = os.path.splitext(filename)
+    headers = {"Content-Type": mimetypes.types_map[file_extension]}
+    return Response(FileWrapper(returned_file), headers=headers, direct_passthrough=True)
+
+@app.route("/uploader", methods=["GET"])
+def uploader():
+    return render_template("uploader.html")
+
+def get_file_names(user):
+    full_directory = "dropzone/" + user + "/"
+    s3 = boto3.client("s3")
+    files = s3.list_objects(Bucket=os.getenv("S3_BUCKET"), Prefix=full_directory)["Contents"]
+    filenames = [os.path.basename(file["Key"]) for file in files]
+    return { "user": user, "files": filenames}
+
+@app.route("/downloader", methods=["GET"])
+def downloader():
+    user = request.args["user"]
+    file_data = get_file_names(user)
+    return render_template("downloader.html", file_data=file_data)
 
 @auth.verify_password
 def verify_password(username, password):
@@ -131,7 +150,7 @@ def verify_password(username, password):
 
 @auth.error_handler
 def unauthorized():
-    response = jsonify({'status': 401, 'error': 'unauthorized', 'message': 'Please authenticate to access this API.'})
+    response = jsonify({"status": 401, "error": "unauthorized", "message": "Please authenticate to access this API."})
     response.status_code = 401
     return response
 
