@@ -3,7 +3,7 @@ load_dotenv()
 
 import os
 from lxml import etree
-from Transunion import TransunionApi
+from transunion import TransunionApi
 import app as main
 from datetime import datetime, timezone
 
@@ -81,9 +81,6 @@ class test_util(unittest.TestCase):
 				dt.day == 12 and dt.month == 11 and dt.year == 2019 and
 				dt.hour == 0 and dt.minute == 0 and dt.second == 0
 			)
-
-
-
 
 if __name__ == '__main__':
 	unittest.main()

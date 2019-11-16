@@ -2,9 +2,9 @@
 <html>
 <head>
 	<meta name="viewport" content="width=device-width">
+	{% block title %} {% endblock %}
 	<title>S3 Uploader Demo</title>
-	{% block additional_style %}
-	{% endblock %}
+	{% block additional_style %} {% endblock %}
 	<link rel="stylesheet" href='/static/mw.css' />
 </head>
 <style>
@@ -14,11 +14,9 @@
 		<h1>MentorWorks</h1>
 	</div>
 	<div class="mw_wrapper">
-		{% block content %}
-		{% endblock %}
+		{% block content %} {% endblock %}
 	</div>
-	{% block additional_scripts %}
-	{% endblock %}
+	{% block additional_scripts %} {% endblock %}
 </html>
 
 

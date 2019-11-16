@@ -1,6 +1,8 @@
 from lxml import etree as ET
+from os import getenv
+from flask import request
 import requests
-import os
+import html
 
 class TransunionApi:
 	def __init__(self,args):
@@ -11,12 +13,12 @@ class TransunionApi:
 		ns1 = '{http://www.transunion.com/namespace}'
 
 		parser = ET.XMLParser(remove_blank_text=True)
-		tree = ET.parse('./request_template.xml', parser)
+		tree = ET.parse('./transunion_request_template.xml', parser)
 		root = tree.getroot()
 
 		#Account config
-		root.find(f'{ns0}systemId').text = os.getenv("SYSTEM_ID")
-		root.find(f'{ns0}systemPassword').text = os.getenv("SYSTEM_PW")
+		root.find(f'{ns0}systemId').text = getenv("SYSTEM_ID")
+		root.find(f'{ns0}systemPassword').text = getenv("SYSTEM_PW")
 
 		creditBureau = root.find(f'{ns0}productrequest').find(f'{ns1}creditBureau')
 		
@@ -33,22 +35,22 @@ class TransunionApi:
 		clientVendorSoftware = transactionControl.find(f'{ns1}clientVendorSoftware')
 		vendor = clientVendorSoftware.find(f'{ns1}vendor')
 
-		subscriber.find(f'{ns1}industryCode').text = os.getenv("INDUSTRY_CODE")
-		subscriber.find(f'{ns1}memberCode').text = os.getenv("MEMBER_CODE")
-		subscriber.find(f'{ns1}inquirySubscriberPrefixCode').text = os.getenv("MARKET") + os.getenv("SUBMARKET")
-		subscriber.find(f'{ns1}password').text = os.getenv("PASSWORD")
+		subscriber.find(f'{ns1}industryCode').text = getenv("INDUSTRY_CODE")
+		subscriber.find(f'{ns1}memberCode').text = getenv("MEMBER_CODE")
+		subscriber.find(f'{ns1}inquirySubscriberPrefixCode').text = getenv("MARKET") + getenv("SUBMARKET")
+		subscriber.find(f'{ns1}password').text = getenv("PASSWORD")
 
-		options.find(f'{ns1}processingEnvironment').text = os.getenv("ENVIRONMENT")
+		options.find(f'{ns1}processingEnvironment').text = getenv("ENVIRONMENT")
 
-		vendor.find(f'{ns1}id').text = os.getenv("VENDOR_ID")
-		vendor.find(f'{ns1}name').text = os.getenv("VENDOR_NAME")
+		vendor.find(f'{ns1}id').text = getenv("VENDOR_ID")
+		vendor.find(f'{ns1}name').text = getenv("VENDOR_NAME")
 
 		software = clientVendorSoftware.find(f'{ns1}software')
-		software.find(f'{ns1}name').text = os.getenv("SOFTWARE_NAME")
-		software.find(f'{ns1}version').text = os.getenv("SOFTWARE_VERSION")
+		software.find(f'{ns1}name').text = getenv("SOFTWARE_NAME")
+		software.find(f'{ns1}version').text = getenv("SOFTWARE_VERSION")
 
-		permissiblePurpose.find(f'{ns1}code').text = os.getenv("PERMISSIBLE_PURPOSE")
-		permissiblePurpose.find(f'{ns1}endUser').find(f'{ns1}unparsed').text = os.getenv("END_USER")
+		permissiblePurpose.find(f'{ns1}code').text = getenv("PERMISSIBLE_PURPOSE")
+		permissiblePurpose.find(f'{ns1}endUser').find(f'{ns1}unparsed').text = getenv("END_USER")
 
 		#Subject of the report
 		subjectName.find(f'{ns1}first').text = self.args['first']
@@ -69,7 +71,15 @@ class TransunionApi:
 	def make_request(self):
 		print('sending:')
 		print(self.request_xml)
-		uri = os.getenv("TURI")
-		certs = (os.getenv("CERTIFICATE_PATH"), os.getenv("KEY_PATH"))
+		uri = getenv("TURI")
+		certs = (getenv("CERTIFICATE_PATH"), getenv("KEY_PATH"))
 		r = requests.post(uri, headers = {'Content-Type': 'application/xml'}, data=self.request_xml, cert = certs, verify=False)
 		return r.content
+
+def transunion_request():
+    args = request.json
+    for key in args:
+        args[key] = html.escape(args[key].upper())
+    t = TransunionApi(args)
+    t.get_request_xml()
+    return t.make_request()

@@ -1,8 +1,12 @@
+from flask import request
+from mailmerge import MailMerge
+
 import requests
 import json
 import base64
-import os
+from os import getenv, remove
 
+#TODO: Figure out how to store the template info in a more open-sourcey way
 template_metadata = {
 	"All Documents merge.docx":
 	    {
@@ -18,10 +22,10 @@ class DocusignApi:
 		self.name = args["name"]
 		self.email = args["email"]
 		self.file_name_path = args["document_file"]
-		self.endpoint = "https://" + os.getenv("DS_PLATFORM") + ".docusign.net/restapi/v2/accounts/" + os.getenv("DS_ACCOUNT_ID") + "/envelopes?Content-Type=application/json"
+		self.endpoint = "https://" + getenv("DS_PLATFORM") + ".docusign.net/restapi/v2/accounts/" + getenv("DS_ACCOUNT_ID") + "/envelopes?Content-Type=application/json"
 
 		self.headers = {
-			"X-DocuSign-Authentication": "{\"Username\":\"" + os.getenv("DS_USERNAME") + "\",\"Password\":\"" + os.getenv("DS_PASSWORD") + "\",\"IntegratorKey\": \"" + os.getenv("DS_INTEGRATOR_KEY") + "\"}",
+			"X-DocuSign-Authentication": "{\"Username\":\"" + getenv("DS_USERNAME") + "\",\"Password\":\"" + getenv("DS_PASSWORD") + "\",\"IntegratorKey\": \"" + getenv("DS_INTEGRATOR_KEY") + "\"}",
 			"Content-Type": "application/json"
 		}
 
@@ -97,3 +101,27 @@ class DocusignApi:
 		with open(self.file_name_path, "rb") as file:
 		    content_bytes = file.read()
 		return base64.b64encode(content_bytes).decode('ascii')
+
+def create_doc(request_json):
+    with MailMerge("./mailmerge_templates/" + request_json["mailmerge_template"]) as document:
+        document.merge(**request_json)
+        filename = "output" + str(int(time.time() * 100000)) + ".docx"
+        document.write(filename)
+        return filename
+    return "file not found"
+
+def docusign_request():
+    if request.method == "POST":
+        filename = create_doc(request.json)
+        docusign_params = {
+            "name": request.json["docusign_name"],
+            "email": request.json["docusign_email"],
+            "template": request.json["mailmerge_template"],
+            "document_file": filename
+        }
+        envelope = DocusignApi(docusign_params)
+        envelope.build_json()
+        remove(filename)
+        return envelope.callout().json()
+    else:
+        return Response(status=403)
