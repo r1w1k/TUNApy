@@ -10,6 +10,7 @@ from random import random
 import docusign
 import transunion
 import aws
+import hubspot
 import mw_util
 
 app = Flask(__name__)
@@ -50,13 +51,20 @@ def download_file(user, filename):
 
 @app.route("/uploader", methods=["GET"])
 def uploader():
-    return render_template("uploader.html", cb=cachebuster)
+    c = hubspot.Contact(request.args["user"])
+    docs = c.get("underwriting_docs_requested").split(";")
+    return render_template("uploader.html", cb=cachebuster, docs=docs)
 
 @app.route("/downloader", methods=["GET"])
 def downloader():
     user = request.args["user"]
     file_data = aws.get_file_data(user)
     return render_template("downloader.html", file_data=file_data, cb=cachebuster)
+
+@app.route("/hubspot/upsert_contact/<email>", methods=["POST"])
+def upsert_contact(email):
+    properties = request.json["properties"]
+    return hubspot.upsert_contact(email, properties)
 
 @auth.verify_password
 def verify_password(username, password):

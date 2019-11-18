@@ -3,12 +3,13 @@
 {% block additional_style %}
 <link rel="stylesheet" href="/static/dropzone.css" />
 {% endblock %}
+
 {% block content %}
 <p class="mw-text">Thank you for your application with MentorWorks!  To proceed further, we'd like to collect a few documents from you so that we may verify your identity:</p>
 <ul class="mw-text">
-	<li>doc1</li>
-	<li>doc2</li>
-	<li>doc3</li>
+	{% for doc in docs %}
+	    <li>{{doc}}</li>
+	{% endfor %}
 </ul>
 <div id="mwdrop" class="dropzone">
 	<form method="post" enctype="multipart/form-data"></form>	
