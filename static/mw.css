@@ -79,3 +79,9 @@ h1{
 	cursor:pointer;
 	color:#AAAAAA;
 }
+a{
+	color:#7c9f72;
+}
+a:hover{
+	color:#9fc893;
+}

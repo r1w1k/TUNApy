@@ -5,7 +5,8 @@ import json
 class Contact:
 	def __init__(self, email):
 		self.email = email
-		self.properties = self.retrieve()
+		self.all_data = self.retrieve()
+		self.properties = self.get_values()
 	
 	def retrieve(self):
 		url = "https://api.hubspot.com/contacts/v1/contact/email/{}/profile?hapikey={}".format(self.email, getenv("HUBSPOT_API_KEY"))
@@ -15,12 +16,14 @@ class Contact:
 		else:
 			return None
 
-	#TODO: I think there's a slicker **kwargs way to do this, but this is fine for now
-	def get(self, property):
-		if self.properties and self.properties.get(property):
-			return self.properties.get(property).get("value")
+	def get_values(self):
+		if self.all_data:
+			props = {}
+			for key in self.all_data:
+				props[key] = self.all_data[key]["value"]
+			return props
 		else:
-			return "ERROR"
+			return {}
 
 # if Hubspot has a contact with this email, it'll update it
 # if it doesn't, a new contact will be created

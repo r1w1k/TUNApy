@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Transunion Demo</title>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+	<h4>Pull Transunion report</h4>
+	<form action="/pull_transunion" method="POST">
+		<input type="hidden" name="email" value="{{ contact.get("email", "demo") }}">
+		<div class="row" style="color:#AAAAAA">
+			<div class="col-md-6">
+				First name
+				<input class="form-control" type="text" name="firstname" value="{{ contact.get("firstname", "") }}">
+				Last name
+				<input class="form-control" type="text" name="lastname" value="{{ contact.get("lastname", "") }}">
+				<div class="row">
+					<div class="col-lg-6">
+						SSN
+						<input class="form-control" type="text" name="ssn">
+					</div>
+					<div class="col-lg-6">
+						DOB
+						<input class="form-control" type="date" name="dob">
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				Address
+				<input class="form-control" type="text" name="address" value="{{ contact.get("address", "") }}">
+				<div class="row">
+					<div class="col-lg-5">
+						City
+						<input class="form-control" type="text" name="city" value="{{ contact.get("city", "") }}">
+					</div>
+					<div class="col-lg-3">
+						State
+						<input class="form-control" type="text" name="state" value="{{ contact.get("state", "") }}">
+					</div>
+					<div class="col-lg-4">
+						Zip
+						<input class="form-control" type="number" name="zip" value="{{ contact.get("zip", "") }}"><br/>
+					</div>
+				</div>
+				<input class="form-control" style="background-color:#9fc893; color:white" type="submit" value="Pull credit">
+			</div>
+		</div>
+	</form>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script type="text/javascript">
+	function mw_submit(){
+
+	}
+</script>
+
+{% endblock %}

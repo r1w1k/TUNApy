@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Transunion Demo</title>
+{% endblock %}
+
+{% block additional_style %}
+<style>
+	h3,h5{
+		/*https://www.youtube.com/watch?v=yBLdQ1a4-JI*/
+		color:#AAAAAA;
+	}
+	.row{
+		margin-bottom:20px;
+	}
+	.problem{
+		color:#ff7e69;
+	}
+	.btn-success{
+		background-color:#ff7e69;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+	<div class="row">
+		<h3>Credit report for {{report.get("names")[0].first + " " + report.get("names")[0].last}}</h3>
+	</div>
+	<div class="row">
+		<h5>Transunion is the sole source for all displayed information</h5>
+	</div>
+	{% if report.get("freeze") %}
+	<div class="row">
+		<h3 style="color: #17a2b8">Credit is frozen</h3>
+	</div>
+	{% endif %}
+	<div class="row">
+		<div class = "col-sm-8">
+			<h5>Summary</h5>
+			<ul>
+				<li>Names on record</li>
+				<ul>
+				{% for name in report.get("names") %}
+					<li>{{name.get("first")}} {{name.get("last")}}</li>
+				{% endfor %}
+				</ul>
+				<li>Date of birth: {{report.get("dob")}}</li>
+				<li class="{{ "problem" if report.get("ssn_match")!="exact" }}">SSN match: {{report.get("ssn_match")}}</li>
+				<li class="{{ "problem" if report.get("hit")!="regularHit" }}">Type of credit hit: {{report.get("hit")}}</li>
+			</ul>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-6">
+			<h5>Known addresses</h5>
+			<ul>
+				{% for address in report.get("addresses") %}
+					<li>{{address.get("number")}} {{address.get("predirectional")}} {{address.get("street")}} {{address.get("type")}}<br/>{{address.get("city")}} {{address.get("state")}} {{address.get("zip")}}</li>
+				{% endfor %}
+			</ul>
+		</div>
+		<div class="col-md-6">
+			<h5>Known employers</h5>
+			<ul>
+				{% for employer in report.get("employment_records") %}
+					<li><strong>{{employer.get("employer")}}</strong></li>
+					<ul>
+						<li>Job Title: {{employer.get("job_title")}}</li>
+						<li>Date hired: {{employer.get("date_hired")}}</li>
+						<li>First reported: {{employer.get("first_reported")}}</li>
+					</ul>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-6">
+			<h5>Tradelines</h5>
+			<ul>
+				{% for tradeline in report.get("tradelines") %}
+					<li class="{{tradeline.get("class")}}"><strong>{{tradeline.get("subscriber")}}</strong></li>
+					<ul class="{{tradeline.get("class")}}">
+						<li>Liability: {{tradeline.get("ecoa")}}</li>
+						<li>Rating: {{tradeline.get("account_rating")}}</li>
+						<li>Past due amount: {{tradeline.get("past_due")}}</li>
+					</ul>
+				{% endfor %}
+			</ul>
+		</div>
+		<div class="col-md-6">
+			<h5>Credit pulls</h5>
+			<ul>
+				{% for inquiry in report.get("inquiries") %}
+					<li><strong>{{inquiry.get("subscriber")}}</strong></li>
+					<ul>
+						<li>Liability: {{inquiry.get("ecoa")}}</li>
+						<li>Date: {{inquiry.get("date")}}</li>
+					</ul>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script type="text/javascript">
+
+</script>
+{% endblock %}

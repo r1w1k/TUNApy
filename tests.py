@@ -25,7 +25,7 @@ class test_transunion(unittest.TestCase):
 		t = TransunionApi(args)
 		t.get_request_xml()
 		#make sure we're always creating a valid XML doc
-		self.assertTrue(etree.fromstring(t.request_xml) is not None)
+		self.assertTrue(etree.fromstring(t.xml_request) is not None)
 
 	def test_credentials_present(self):
 		self.assertTrue(
