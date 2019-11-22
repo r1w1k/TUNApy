@@ -82,8 +82,8 @@ def uploader():
 
 @app.route("/downloader", methods=["GET"])
 def downloader():
-    user = request.args["user"]
-    file_data = aws.get_file_data(user)
+    email = request.args["email"]
+    file_data = aws.get_file_data(email)
     return render_template("downloader.html", file_data=file_data, cb=cachebuster)
 
 @app.route("/hubspot/upsert_contact/<email>", methods=["POST"])
