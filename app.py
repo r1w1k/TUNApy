@@ -13,11 +13,17 @@ import aws
 import hubspot
 import mw_util
 
+print("starting app")
 app = Flask(__name__)
+print("done starting app")
 auth = HTTPBasicAuth()
 load_dotenv()
 
 cachebuster = "?" + str(floor(random()*1000000000))
+
+@app.route("/", methods=["GET"])
+def root():
+    return render_template("base.html")
 
 @app.route("/credit_pull_form/<email>", methods=["GET"])
 def credit_pull(email):
