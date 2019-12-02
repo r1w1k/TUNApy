@@ -5,10 +5,10 @@
 {% endblock %}
 
 {% block content %}
-<h3>Files uploaded by {{file_data["user"]}}</h3>
+<h3>Files uploaded by {{file_data.get("email", "")}}</h3>
 <ul>
 {% for filename in file_data["files"] %}
-    <li class="download-link" downloadlink="{{"/s3/download/" + file_data["user"] + "/" + filename}}">{{filename}}</li>
+    <li class="download-link" downloadlink="{{"/s3/download/" + file_data.get("email", "") + "/" + filename}}">{{filename}}</li>
 {% endfor %}
 </ul>
 <div class="iframe-container">

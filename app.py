@@ -13,9 +13,7 @@ import aws
 import hubspot
 import mw_util
 
-print("starting app")
 app = Flask(__name__)
-print("done starting app")
 auth = HTTPBasicAuth()
 load_dotenv()
 

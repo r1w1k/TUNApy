@@ -4,15 +4,17 @@ from mailmerge import MailMerge
 import requests
 import json
 import base64
+import time
+from datetime import date
 from os import getenv, remove
 
 #TODO: Figure out how to store the template info in a more open-sourcey way
 template_metadata = {
-	"All Documents merge.docx":
+	"isa_full.docx":
 	    {
-	        "email_message": "Here is FD email message",
-	        "email_subject": "MW Final Disclosure",
-	        "docusign_name": "Mentorworks Final Disclosure"
+	        "email_message": "PLACHOLDER email message",
+	        "email_subject": "PLACHOLDER Email Subject",
+	        "docusign_name": "PLACHOLDER Document Name"
 	    }
 }
 
@@ -103,12 +105,36 @@ class DocusignApi:
 		return base64.b64encode(content_bytes).decode('ascii')
 
 def create_doc(request_json):
-    with MailMerge("./mailmerge_templates/" + request_json["mailmerge_template"]) as document:
-        document.merge(**request_json)
-        filename = "output" + str(int(time.time() * 100000)) + ".docx"
-        document.write(filename)
-        return filename
-    return "file not found"
+	dates_added = calculate_payment_dates(request_json)
+	with MailMerge("./mailmerge_templates/" + dates_added["mailmerge_template"]) as document:
+		document.merge(**request_json)
+		filename = "output" + str(int(time.time() * 100000)) + ".docx"
+		document.write(filename)
+		return filename
+	return "file not found"
+
+def calculate_payment_dates(request_json):
+	grad_month = int(request_json["graduation_month"])
+	grad_year = int(request_json["graduation_year"])
+
+	payment_yr_1_month = grad_month + 4 if grad_month + 4 <= 12 else (grad_month + 4)%12
+	payment_yr_1_year = grad_year + int((grad_month + 4)/12)
+
+	grace_period_start = date(grad_year, grad_month, 1)
+	payment_yr_1 = date(payment_yr_1_year, payment_yr_1_month, 1)
+	payment_yr_2 = date(payment_yr_1_year + 1, payment_yr_1_month, 1)
+	payment_yr_3 = date(payment_yr_1_year + 2, payment_yr_1_month, 1)
+	payment_yr_4 = date(payment_yr_1_year + 3, payment_yr_1_month, 1)
+	payment_yr_5 = date(payment_yr_1_year + 4, payment_yr_1_month, 1)
+
+	request_json["grace_period_start_Date"] = grace_period_start.strftime('%m/%d/%Y')
+	request_json["yr_1_pmt_cap_date"] = payment_yr_1.strftime('%m/%d/%Y')
+	request_json["yr_2_pmt_cap_date"] = payment_yr_2.strftime('%m/%d/%Y')
+	request_json["yr_3_pmt_cap_date"] = payment_yr_3.strftime('%m/%d/%Y')
+	request_json["yr_4_pmt_cap_date"] = payment_yr_4.strftime('%m/%d/%Y')
+	request_json["yr_5_pmt_cap_date"] = payment_yr_5.strftime('%m/%d/%Y')
+
+	return request_json
 
 def docusign_request():
     if request.method == "POST":
